@@ -7,7 +7,7 @@ let editor;
 if (!document.documentElement.getAttribute('theme')) {
     document.documentElement.setAttribute('theme', 'light');
 }
-
+ 
 // --- Theme helper functions ---
 function getCurrentTheme() {
     return document.documentElement.getAttribute('theme') || 'light';
@@ -3472,4 +3472,5 @@ setInterval(() => {
         }
     }
 }, 30000); // Check every 30 seconds
+
 
