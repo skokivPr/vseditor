@@ -23,20 +23,56 @@
     --rgb-purple: 155, 89, 182;
     --rgb-orange: 211, 84, 0;
     --rgb-gray: 128, 128, 128;
+    --rgb-white: 0, 0, 0;
+
+    /* Colors for syntax highlighting */
+    --Keywords: #FF00FF;
+    /* 🟣 Electric Magenta */
+    --Strings: #ffee00;
+    /* 🟢 Neon Green */
+    --Comments: #858585;
+    /* 🔵 Bright Cyan */
+    --Numbers: #ffbb00;
+    /* 🟠 Bright Orange */
+    --Functions: #00ff88;
+    /* 🔵 Electric Blue */
+    --Variables: #FFFF00;
+    /* 🟡 Bright Yellow */
+    --Types: #ae00ff;
+    /* 🟣 Purple */
+    --HTML-Tags: #0099ff;
+    /* 🩷 Hot Pink */
+    --CSS-Props: #32CD32;
+    /* 🟢 Lime Green */
+    --Operators: #ffee00;
+    /* 🟠 Orange Red */
 }
 
 :root[theme="dark"] {
     --primary-color: #fd810d;
     --secondary-color: #f9a86e2b;
-    --tertiary-color: #343a40;
+    --tertiary-color: #414141;
     --quaternary-color-hover: #49505719;
-    --quaternary-color: #6c757d;
-    --quinary-color: #212529;
+    --quaternary-color: #7c7c7c;
+    --quinary-color: #222;
     --background-color: #1a1a1a;
     --text-color: #ffffff;
-    --border-color: #5c5c5c73;
-    --hover-color: #343a40;
-    --accent-color: #adb5bd;
+    --border-color: #36363673;
+    --hover-color: #414141;
+    --accent-color: #707070;
+
+    /* RGB values for dynamic colors - dark theme */
+    --rgb-green: 46, 204, 113;
+    --rgb-red: 231, 76, 60;
+    --rgb-yellow: 241, 196, 15;
+    --rgb-blue: 74, 144, 226;
+    /* --- Poprawka: Dodano brakujące zmienne --- */
+    --rgb-purple: 155, 89, 182;
+    --rgb-orange: 230, 126, 34;
+    --rgb-gray: 149, 165, 166;
+    --rgb-white: 255, 255, 255;
+
+
 }
 
 /* ==========================================================================
@@ -59,7 +95,7 @@ html {
 /* Czcionka 'Share Tech Mono' jest teraz stosowana do konkretnych elementów */
 .monaco-editor,
 .shortcut-key,
-.swal2-popup {
+.custom-modal-content {
     font-family: 'Share Tech Mono', monospace;
 }
 
@@ -67,6 +103,7 @@ html {
     scrollbar-width: none;
     scrollbar-color: #383838 #2e2e2e;
     user-select: none;
+    border-radius: 0px !important;
 }
 
 *::-webkit-scrollbar {
@@ -79,7 +116,7 @@ html {
 
 *::-webkit-scrollbar-thumb {
     background-color: #383838;
-    border-radius: 3px;
+    border-radius: 0px;
     border: 3px solid #303030;
 }
 
@@ -96,8 +133,6 @@ p {
     line-height: 1.5;
     color: var(--text-color);
     font-family: 'Share Tech Mono', monospace;
-    font-size: 14px;
-    font-weight: 400;
 }
 
 /* ==========================================================================
@@ -182,6 +217,12 @@ p {
 
 .toolbar-button i {
     font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+
+.toolbar-button:hover i {
+    color: var(--primary-color);
 }
 
 .toolbar-button:hover {
@@ -191,6 +232,21 @@ p {
 
 .toolbar-button:active {
     opacity: 0.5;
+}
+
+/* View Mode Button States */
+.view-mode-btn.active {
+    background-color: rgb(var(--rgb-orange), 0.1) !important;
+    color: var(--primary-color) !important;
+}
+
+.view-mode-btn.active i {
+    color: var(--primary-color) !important;
+}
+
+:root[theme="dark"] .view-mode-btn.active {
+    background-color: rgb(var(--rgb-orange), 0.1) !important;
+    color: var(--primary-color) !important;
 }
 
 .toolbar-section {
@@ -203,7 +259,7 @@ p {
     background-color: var(--border-color);
     margin: 8px 0;
     opacity: 0.6;
-    border-radius: 0.5px;
+    border-radius: 0px;
     transition: all 0.3s ease;
 }
 
@@ -235,7 +291,7 @@ p {
     padding: 0 20px;
     max-height: 0;
     overflow: hidden;
-    transition: all 0.4s ease;
+    transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.3s ease 0.1s;
     opacity: 0;
 }
 
@@ -244,6 +300,12 @@ p {
     padding: 20px 0px 10px 0px;
     opacity: 1;
     border-bottom: 1px solid var(--border-color);
+    transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.3s ease;
+}
+
+/* Smooth collapse - text fades out first */
+.footer-content:not(.expanded) {
+    transition: max-height 0.4s ease 0.1s, padding 0.4s ease 0.1s, opacity 0.2s ease;
 }
 
 .footer-section h4 {
@@ -370,6 +432,10 @@ p {
     display: flex;
     align-items: center;
     gap: 15px;
+    position: relative;
+    min-height: 34px;
+    padding-right: 45px;
+    /* Space for footer-toggle */
 }
 
 .footer-toggle {
@@ -386,33 +452,59 @@ p {
     justify-content: center;
     width: 34px;
     height: 34px;
+    position: absolute;
+    right: 0;
+    top: 0;
 }
 
 .footer-toggle:hover {
-    background-color: var(--secondary-color);
+    background-color: rgb(var(--rgb-red), 0.1);
     border-color: transparent;
     color: var(--primary-color);
 }
 
 .footer-toggle i {
-    transition: transform 0.2s ease;
-    font-size: 16px;
+    transition: all 0.3s ease;
+    font-size: 18px;
 }
+
+
+.footer-toggle:hover i {
+    color: var(--primary-color);
+}
+
+.footer-toggle.rotated i {
+    color: rgb(var(--rgb-red));
+}
+
+
+.footer-toggle.rotated:hover i {
+    color: var(--text-color);
+}
+
+
+.footer-toggle.rotated {
+    background-color: rgb(var(--rgb-red), 0.1);
+
+
+}
+
 
 .footer-copyright p {
     margin: 0;
-    font-size: 12px;
-    opacity: 0.6;
+    font-size: 14px;
+    opacity: 1;
+    font-family: 'Share Tech Mono', monospace, Arial, sans-serif;
 }
 
 .current-year {
     color: var(--primary-color);
-    background-color: var(--secondary-color);
+    background-color: rgb(var(--rgb-orange), 0.1);
     border: 1px solid var(--border-color);
-    padding: 2px 4px;
+    padding: 5px 7px;
     border-radius: 0px;
-    font-weight: 600;
-    font-size: 12px;
+    font-weight: 400;
+    font-size: 14px;
 }
 
 /* Status Indicators */
@@ -457,46 +549,120 @@ p {
    Custom UI Components (Buttons, Selects)
    ========================================================================== */
 .my-btn {
-    border-radius: 0px;
     transition: all 0.3s ease;
-    background-color: var(--background-color);
-    border: 1px solid var(--border-color);
+    background-color: rgb(var(--rgb-orange), 0.01);
+    border: 1px solid transparent;
     color: var(--text-color);
-    padding: 6px 12px;
-    font-size: 14px;
+    padding: 8px 16px;
+    font-size: 15px;
+    font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    width: 80px;
-    height: 30px;
+    justify-content: center;
+    gap: 8px;
+    min-width: 90px;
+    height: 36px;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.my-btn::before,
+.my-btn::after {
+    content: '';
+    position: absolute;
+    width: 10%;
+    height: 25%;
+    transition: all 0.35s ease;
+    background: transparent;
+    z-index: 1;
+}
+
+.my-btn::before {
+    top: 0;
+    left: 0;
+    border-left: 1px solid var(--primary-color);
+    border-top: 1px solid var(--primary-color);
+    opacity: 0;
+}
+
+.my-btn::after {
+    bottom: 0;
+    right: 0;
+    border-right: 1px solid var(--primary-color);
+    border-bottom: 1px solid var(--primary-color);
+    opacity: 0;
 }
 
 .my-btn i {
-    font-size: 14px;
+    font-size: 16px;
+    transition: transform 0.3s ease;
 }
 
 .my-btn:hover {
-    background-color: var(--secondary-color);
-    color: var(--primary-color);
+    background-color: rgb(var(--rgb-orange), 0.1);
+    color: var(--text-color);
 }
+
+.my-btn:hover::before,
+.my-btn:hover::after {
+    width: 99%;
+    height: 98%;
+    opacity: 1;
+}
+
+
+
 
 .my-btn:active {
-    opacity: 0.5;
-    color: var(--primary-color);
-    background-color: var(--secondary-color);
-    border: 1px solid var(--primary-color);
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(var(--rgb-orange), 0.2);
 }
 
-.my-btn-primary:hover {
-    border-color: #e6730b;
+
+.my-btn-primary {
+    background-color: rgb(var(--rgb-orange), 0.05);
+    color: var(--primary-color);
+    font-weight: 700;
+
+}
+
+.my-btn-secondary i,
+.my-btn-primary i {
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.my-btn-primary:hover i {
+    color: var(--primary-color);
+}
+
+
+
+.my-btn-secondary:hover i {
+    color: rgb(var(--rgb-red));
+}
+
+
+
+.my-btn-secondary {
+    background-color: rgb(var(--rgb-red), 0.05);
+    color: rgb(var(--rgb-red));
 }
 
 .my-btn-secondary:hover {
-    background-color: var(--quaternary-color-hover);
-    border-color: var(--quaternary-color);
-    opacity: 0.5;
+    background-color: rgb(var(--rgb-red), 0.1);
+    color: var(--text-color);
 }
+
+.my-btn-secondary:hover::before,
+.my-btn-secondary:hover::after {
+    border-color: rgb(var(--rgb-red));
+}
+
 
 .my-select {
     border: 1px solid var(--border-color);
@@ -575,7 +741,7 @@ p {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
+    padding: 0.5rem;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--quinary-color);
 }
@@ -608,6 +774,17 @@ p {
     justify-content: center;
     width: 32px;
     height: 32px;
+}
+
+.modal-close i {
+    color: var(--quaternary-color);
+    transition: all 0.3s ease;
+}
+
+
+
+.modal-close:hover i {
+    color: var(--primary-color);
 }
 
 .modal-close:hover {
@@ -704,273 +881,426 @@ p {
 }
 
 /* ==========================================================================
-   SweetAlert2 Custom Styles
-   --- Poprawka: Skonsolidowano wszystkie style dla SweetAlert2 ---
+   Custom Modal Styles (replacing SweetAlert2)
    ========================================================================== */
-div:where(.swal2-container) div:where(.swal2-popup) {
-    background-color: var(--background-color) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 0px !important;
-    color: var(--text-color) !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-}
-
-div:where(.swal2-container) .swal2-title {
-    color: var(--text-color) !important;
-    font-weight: 600 !important;
-    font-size: 18px !important;
-    margin-bottom: 10px !important;
-}
-
-div:where(.swal2-container) .swal2-html-container {
-    color: var(--text-color) !important;
-    opacity: 0.8 !important;
-    font-size: 14px !important;
-    line-height: 1.4 !important;
-}
-
-div:where(.swal2-container) .swal2-actions {
-    gap: 10px !important;
-    margin-top: 20px !important;
-}
-
-div:where(.swal2-container) .swal2-confirm,
-div:where(.swal2-container) .swal2-cancel {
-    border-radius: 0px !important;
-    font-size: 14px !important;
-    padding: 8px 16px !important;
-    transition: all 0.2s ease !important;
-}
-
-div:where(.swal2-container) .swal2-confirm {
-    background-color: var(--primary-color) !important;
-    border: 1px solid var(--primary-color) !important;
-    color: white !important;
-}
-
-div:where(.swal2-container) .swal2-confirm:hover {
-    background-color: #e6730b !important;
-    border-color: #e6730b !important;
-}
-
-div:where(.swal2-container) .swal2-cancel {
-    background-color: var(--quaternary-color) !important;
-    border: 1px solid var(--quaternary-color) !important;
-    color: white !important;
-}
-
-div:where(.swal2-container) .swal2-cancel:hover {
-    background-color: var(--accent-color) !important;
-    border-color: var(--accent-color) !important;
-}
-
-/* SweetAlert2 Icons */
-div:where(.swal2-container) .swal2-icon.swal2-warning {
-    border-color: var(--primary-color) !important;
-    color: var(--primary-color) !important;
-}
-
-div:where(.swal2-container) .swal2-icon.swal2-success .swal2-success-ring {
-    border-color: var(--primary-color) !important;
-}
-
-div:where(.swal2-container) .swal2-icon.swal2-success .swal2-success-line-tip,
-div:where(.swal2-container) .swal2-icon.swal2-success .swal2-success-line-long {
-    background-color: var(--primary-color) !important;
-}
-
-div:where(.swal2-container) .swal2-icon.swal2-error {
-    border-color: rgb(var(--rgb-red)) !important;
-    color: rgb(var(--rgb-red)) !important;
-}
-
-div:where(.swal2-container) .swal2-icon.swal2-info {
-    border-color: rgb(var(--rgb-blue)) !important;
-    color: rgb(var(--rgb-blue)) !important;
-}
-
-/* SweetAlert2 Notification Specific */
-div:where(.swal2-container) .swal-success-popup {
-    width: 300px !important;
-}
 
 /* ==========================================================================
-   Monaco Editor Customization
+   Editor Statistics Modal - In Website Style
    ========================================================================== */
-/* Line Highlighting & Numbers */
-.monaco-editor .margin .line-numbers {
-    color: var(--accent-color) !important;
-    opacity: 0.7;
-    transition: opacity 0.3s ease;
+.editor-stats-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    animation: modalSlideIn 0.3s ease-out;
 }
 
-.monaco-editor .margin .line-numbers.active-line-number {
-    color: var(--primary-color) !important;
-    opacity: 1;
-    font-weight: bold;
+.editor-stats-modal-content {
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0px;
+    padding: 0;
+    min-width: 600px;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    font-family: 'Share Tech Mono', monospace;
 }
 
-.monaco-editor .current-line-exact {
-    background-color: rgba(var(--rgb-blue), 0.08) !important;
-    border: 1px solid rgba(var(--rgb-blue), 0.2) !important;
-    border-radius: 2px;
+.editor-stats-header {
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 20px 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    position: relative;
 }
 
-.monaco-editor .view-line:hover {
-    background-color: rgba(var(--rgb-blue), 0.05) !important;
+.stats-icon {
+    width: 40px;
+    height: 40px;
+    background: rgb(var(--rgb-orange), 0.1);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--primary-color);
 }
 
-:root[theme="dark"] .monaco-editor .current-line-exact {
-    background-color: rgba(var(--rgb-blue), 0.15) !important;
-    border: 1px solid rgba(var(--rgb-blue), 0.3) !important;
+
+.stats-icon i {
+    color: var(--primary-color);
+
+
 }
 
-:root[theme="dark"] .monaco-editor .view-line:hover {
-    background-color: rgba(var(--rgb-blue), 0.08) !important;
+.editor-stats-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    flex: 1;
+    color: var(--text-color);
+    font-family: 'Share Tech Mono', monospace;
 }
 
-/* Bracket & Pair Colorization */
-.monaco-editor .bracket-highlighting-0 {
-    color: rgb(var(--rgb-yellow)) !important;
+.stats-close-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--quaternary-color);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 18px;
 }
 
-.monaco-editor .bracket-highlighting-1 {
-    color: rgb(var(--rgb-green)) !important;
+.stats-close-btn:hover {
+    color: var(--primary-color);
+    background-color: rgb(var(--rgb-red), 0.1);
 }
 
-.monaco-editor .bracket-highlighting-2 {
-    color: rgb(var(--rgb-blue)) !important;
+.stats-close-btn i {
+    transition: all 0.3s ease;
 }
 
-.monaco-editor .bracket-highlighting-3 {
-    color: rgb(var(--rgb-red)) !important;
+.stats-close-btn:hover i {
+    color: rgb(var(--rgb-red), 1);
 }
 
-/* Selection & Occurrence Highlights */
-.monaco-editor .selected-text {
-    background-color: rgba(var(--rgb-blue), 0.2) !important;
+.editor-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border-color);
+    padding: 0;
 }
 
-.monaco-editor .selectionHighlight {
-    background-color: rgba(var(--rgb-yellow), 0.3) !important;
-    border: 1px solid rgba(var(--rgb-yellow), 0.5) !important;
+.stat-item {
+    background: var(--background-color);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
-:root[theme="dark"] .monaco-editor .selectionHighlight {
-    background-color: rgba(var(--rgb-yellow), 0.2) !important;
-    border: 1px solid rgba(var(--rgb-yellow), 0.4) !important;
+.stat-item:hover {
+    background-color: rgb(var(--rgb-gray), 0.1);
+    color: var(--primary-color);
 }
 
-/* Cursor */
-.monaco-editor .cursors-layer .cursor {
-    background: var(--primary-color) !important;
-    width: 2px !important;
-    animation: blink 1s infinite;
+.stat-item.selected {
+    background-color: rgb(var(--rgb-gray), 0.1);
+    border-left: 3px solid var(--primary-color);
 }
 
-/* Squiggly Lines for Errors/Warnings */
-.monaco-editor .squiggly-error {
-    background: url("data:image/svg+xml,%3csvg width='6' height='3' viewBox='0 0 6 3' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='rgb(231, 76, 60)' fill='none' stroke-width='.7'/%3e%3c/svg%3e") repeat-x bottom left;
+
+.stat-item .stat-icon i {
+    transition: all 0.3s ease;
+    filter: drop-shadow(2px 2px 1px #111);
+
 }
 
-.monaco-editor .squiggly-warning {
-    background: url("data:image/svg+xml,%3csvg width='6' height='3' viewBox='0 0 6 3' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='rgb(243, 156, 18)' fill='none' stroke-width='.7'/%3e%3c/svg%3e") repeat-x bottom left;
+
+.stat-item .stat-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--border-color);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--quaternary-color);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
-.monaco-editor .squiggly-info {
-    background: url("data:image/svg+xml,%3csvg width='6' height='3' viewBox='0 0 6 3' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='rgb(52, 152, 219)' fill='none' stroke-width='.7'/%3e%3c/svg%3e") repeat-x bottom left;
+.stat-item:hover .stat-icon {
+    color: var(--primary-color);
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
-/* Bracket & Indent Guides */
-.monaco-editor .bracket-guide-0 {
-    border-left: 1px solid rgba(var(--rgb-blue), 0.4) !important;
+.stat-item:hover .stat-icon i {
+    color: var(--primary-color);
+
+
 }
 
-.monaco-editor .bracket-guide-1 {
-    border-left: 1px solid rgba(var(--rgb-green), 0.4) !important;
+.stat-info {
+    flex: 1;
 }
 
-.monaco-editor .bracket-guide-2 {
-    border-left: 1px solid rgba(var(--rgb-yellow), 0.4) !important;
+.stat-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 4px;
+    font-family: 'Share Tech Mono', monospace;
 }
 
-.monaco-editor .bracket-guide-3 {
-    border-left: 1px solid rgba(var(--rgb-red), 0.4) !important;
+.stat-label {
+    font-size: 12px;
+    color: var(--quaternary-color);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.monaco-editor .bracket-guide-4 {
-    border-left: 1px solid rgba(var(--rgb-purple), 0.4) !important;
+.editor-stats-footer {
+    background: var(--background-color);
+    border-top: 1px solid var(--border-color);
+    padding: 20px 25px;
+    display: flex;
+    justify-content: center;
 }
 
-.monaco-editor .bracket-guide-5 {
-    border-left: 1px solid rgba(var(--rgb-orange), 0.4) !important;
+.stats-refresh-btn {
+    background: none;
+    color: var(--quaternary-color);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 40px;
 }
 
-.monaco-editor .bracket-guide-active {
-    border-left-width: 2px !important;
-    opacity: 1 !important;
+.stats-refresh-btn:hover {
+    color: var(--primary-color);
+    background-color: rgb(var(--rgb-orange), 0.1);
 }
 
-.monaco-editor .lines-content .core-guide {
-    border-left: 1px dotted rgba(var(--rgb-gray), 0.3) !important;
+.stats-refresh-btn:active {
+    opacity: 0.5;
 }
 
-/* Custom Syntax Color Enhancements */
-.monaco-editor .token.keyword {
-    font-weight: bold !important;
+.stats-refresh-btn i {
+    transition: transform 0.3s ease;
+    font-size: 16px;
 }
 
-.monaco-editor .token.string {
-    font-style: normal !important;
+.stats-refresh-btn:hover i {
+    transform: rotate(180deg);
 }
 
-.monaco-editor .token.comment {
-    font-style: italic !important;
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .editor-stats-modal-content {
+        min-width: 90vw;
+        margin: 20px;
+    }
+
+    .editor-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-item {
+        padding: 15px;
+    }
+}
+
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.custom-modal-content {
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0px;
+    padding: 24px;
+    min-width: 300px;
+    max-width: 500px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+.custom-modal-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.custom-modal-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 18px;
+}
+
+.custom-modal-icon.success {
+    background: rgba(var(--rgb-green), 0.1);
+    color: rgb(var(--rgb-green));
+}
+
+.custom-modal-icon.error {
+    background: rgba(var(--rgb-red), 0.1);
+    color: rgb(var(--rgb-red));
+}
+
+.custom-modal-icon.warning {
+    background: rgba(var(--rgb-orange), 0.1);
+
+}
+
+.custom-modal-icon.warning i {
+    background: rgba(var(--rgb-orange), 0.1);
+    color: var(--primary-color);
+}
+
+.custom-modal-icon.info {
+    background: rgba(var(--rgb-blue), 0.1);
+
+}
+
+.custom-modal-icon.info i {
+    color: rgb(var(--rgb-blue));
+}
+
+.custom-modal-title {
+    color: var(--text-color);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.custom-modal-body {
+    margin-bottom: 20px;
+}
+
+.custom-modal-text {
+    color: var(--text-color);
     opacity: 0.8;
+    font-size: 14px;
+    line-height: 1.4;
+    margin: 0;
 }
 
-.monaco-editor .token.number {
-    font-weight: 500 !important;
+.custom-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
 }
 
-.monaco-editor .token.function {
-    font-weight: bold !important;
+.custom-modal-btn {
+    padding: 8px 16px;
+    border: 1px solid transparent;
+    border-radius: 0px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    font-weight: 900;
 }
 
-.monaco-editor .token.type {
-    font-weight: bold !important;
+.custom-modal-btn.confirm-btn {
+    background-color: rgb(var(--rgb-orange), 0.05);
+    color: var(--primary-color);
 }
 
-/* Rainbow CSV Styles */
-.monaco-editor .csv-column-0 {
-    color: rgb(231, 76, 60) !important;
+.custom-modal-btn.confirm-btn:hover {
+    background-color: rgb(var(--rgb-orange), 0.1);
+    color: var(--text-color);
+    border-color: var(--primary-color);
 }
 
-.monaco-editor .csv-column-1 {
-    color: rgb(52, 152, 219) !important;
+.custom-modal-btn.cancel-btn {
+    background-color: rgb(var(--rgb-red), 0.05);
+    color: rgb(var(--rgb-red));
 }
 
-.monaco-editor .csv-column-2 {
-    color: rgb(39, 174, 96) !important;
+.custom-modal-btn.cancel-btn:hover {
+    background-color: rgb(var(--rgb-red), 0.1);
+    color: var(--text-color);
+    border-color: rgb(var(--rgb-red));
 }
 
-.monaco-editor .csv-column-3 {
-    color: rgb(243, 156, 18) !important;
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
-.monaco-editor .csv-column-4 {
-    color: rgb(155, 89, 182) !important;
-}
 
-.monaco-editor .csv-column-5 {
-    color: rgb(26, 188, 156) !important;
-}
 
 /* ==========================================================================
    Animations & Responsive Design
    ========================================================================== */
+
+/* --- Ripple Effect --- */
+.ripple-button {
+    position: relative;
+    overflow: hidden;
+    /* Improve stacking context for the ripple effect */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(0);
+    animation: ripple-effect 600ms linear;
+    pointer-events: none;
+    /* Prevent interference with other events */
+}
+
+:root[theme="dark"] .ripple {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes ripple-effect {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
 @keyframes spin {
     0% {
         transform: rotate(0deg);
@@ -978,6 +1308,23 @@ div:where(.swal2-container) .swal-success-popup {
 
     100% {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse-glow {
+    0% {
+        filter: brightness(1.15) saturate(1.4) contrast(1.15);
+        box-shadow: inset 0 0 30px rgba(255, 0, 255, 0.08), 0 0 50px rgba(0, 255, 255, 0.04);
+    }
+
+    50% {
+        filter: brightness(1.25) saturate(1.6) contrast(1.25);
+        box-shadow: inset 0 0 40px rgba(255, 0, 255, 0.15), 0 0 70px rgba(0, 255, 255, 0.08);
+    }
+
+    100% {
+        filter: brightness(1.15) saturate(1.4) contrast(1.15);
+        box-shadow: inset 0 0 30px rgba(255, 0, 255, 0.08), 0 0 50px rgba(0, 255, 255, 0.04);
     }
 }
 
