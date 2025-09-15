@@ -474,7 +474,7 @@ if (typeof monaco !== 'undefined') {
 } else {
     // Load Monaco Editor loader dynamically
     const loaderScript = document.createElement('script');
-    loaderScript.src = 'loader.min.js';
+    loaderScript.src = 'https://cdn.jsdelivr.net/gh/skokivPr/vseditor@refs/heads/v3/loader.min.js';
     loaderScript.onload = function () {
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0/min/vs' } });
         require(['vs/editor/editor.main'], initializeEditor);
