@@ -59,6 +59,11 @@ function setTheme(theme, customTheme = null) {
     }
 
     updateThemeIcon(theme, customTheme);
+
+    const pf = document.getElementById('preview');
+    if (pf && pf.srcdoc) {
+        pf.srcdoc = getPreviewStoppedSrcdoc();
+    }
 }
 
 function updateThemeIcon(theme, customTheme = null) {
@@ -2208,6 +2213,41 @@ function loadStateFromStorage(state, isManualLoad = false) {
 }
 
 // --- Core Functions ---
+/** Podgląd po Stop (srcdoc). Kolory: zmienne --preview-stopped-* w index.css (czytane poniżej). */
+function getPreviewStoppedSrcdoc() {
+    let bg = '#ffffff';
+    let fg = '#6c757d';
+    let accent = '#fd810d';
+    try {
+        const cs = getComputedStyle(document.documentElement);
+        const b = cs.getPropertyValue('--preview-stopped-bg').trim();
+        const f = cs.getPropertyValue('--preview-stopped-fg').trim();
+        const a = cs.getPropertyValue('--preview-stopped-accent').trim();
+        if (b) bg = b;
+        if (f) fg = f;
+        if (a) accent = a;
+    } catch (e) {
+        /* ignore */
+    }
+    return (
+        '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+        '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+        '<style>html,body{height:100%;margin:0;background:' +
+        bg +
+        ';color:' +
+        fg +
+        ';font-family:Roboto,system-ui,sans-serif}' +
+        '.wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.5rem;text-align:center;user-select:none}' +
+        '.dot{color:' +
+        accent +
+        '}</style></head><body><div class="wrap">' +
+        '<span class="dot" aria-hidden="true">■</span>' +
+        '<div>Podgląd zatrzymany</div>' +
+        '<div style="font-size:12px;opacity:.85">Wznów: przycisk Run lub Ctrl+Enter</div>' +
+        '</div></body></html>'
+    );
+}
+
 function updatePreview() {
     if (!editor) return;
     const code = editor.getValue();
@@ -2215,6 +2255,7 @@ function updatePreview() {
 
     try {
         // Completely reload the iframe to avoid variable redeclaration errors
+        previewFrame.removeAttribute('srcdoc');
         previewFrame.src = 'about:blank';
 
         // Wait a moment for the iframe to reload, then set the content
@@ -2244,15 +2285,8 @@ function stopPreview() {
     const previewFrame = document.getElementById('preview');
 
     try {
-        // Stop loading by setting src to blank
-        previewFrame.src = 'about:blank';
-
-        // Clear any pending operations
-        const preview = previewFrame.contentDocument || previewFrame.contentWindow.document;
-        if (preview) {
-            preview.open();
-            preview.close();
-        }
+        previewFrame.removeAttribute('src');
+        previewFrame.srcdoc = getPreviewStoppedSrcdoc();
 
         updateFooterStatus('Preview stopped', 'stop');
         setTimeout(() => updateFooterStatus('Ready', 'circle'), 2000);
