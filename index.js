@@ -3,9 +3,9 @@ let editor;
 // Import Monaco Editor styles and themes
 // This script should be loaded after monaco-style.js
 
-// --- Initialize theme ---
+// --- Initialize theme (head w index.html ustawia z localStorage; tu tylko awaria bez atrybutu) ---
 if (!document.documentElement.getAttribute('theme')) {
-    document.documentElement.setAttribute('theme', 'light');
+    document.documentElement.setAttribute('theme', 'dark');
 }
 
 // Motywy Monaco: defineVSCodeThemes, defineDraganTheme, refreshVSCodeThemes, setupCSSVariableObserver — monaco-style.js
@@ -203,7 +203,7 @@ function getEditorSettings() {
             mouseWheelZoom: true,
             contextmenu: true,
             selectOnLineNumbers: true,
-            glyphMargin: true,
+            glyphMargin: false,
             folding: true,
             foldingStrategy: 'auto',
             showFoldingControls: 'mouseover',
@@ -328,13 +328,22 @@ function getDefaultEditorOptions() {
         linkedEditing: p.linkedEditing !== false,
         smoothScrolling: p.smoothScrolling !== false,
         mouseWheelZoom: p.mouseWheelZoom !== false,
-        renderLineHighlight: 'all',
-        lineNumbersMinChars: 3,
+        /* Aktywna linia: tylko pas treści (mniej „szumu” niż 'all' w marginesie) */
+        renderLineHighlight: 'line',
+        stickyScroll: {
+            enabled: true,
+            maxLineCount: 5,
+            defaultModel: 'indentationModel'
+        },
+        lineNumbersMinChars: 1,
         occurrencesHighlight: p.occurrencesHighlight !== false,
         selectionHighlight: p.selectionHighlight !== false,
         foldingHighlight: true,
         folding: p.folding !== false,
-        glyphMargin: p.glyphMargin !== false,
+        foldingStrategy: settings.advanced.foldingStrategy || 'auto',
+        showFoldingControls: settings.advanced.showFoldingControls || 'mouseover',
+        glyphMargin: p.glyphMargin === true,
+        selectOnLineNumbers: settings.advanced.selectOnLineNumbers !== false,
         colorDecorators: p.colorDecorators !== false,
         validate: true,
         diagnostics: {
@@ -401,9 +410,6 @@ function initializeEditor() {
     editor = monaco.editor.create(document.getElementById('editor'), editorOptions);
     window.editor = editor;
     console.log('✅ Monaco Editor instance created successfully');
-
-    bracketGuidesEnabled = getEditorPrefs().indentGuides !== false;
-    window.bracketGuidesEnabled = bracketGuidesEnabled;
 
     // Add cursor position tracking
     editor.onDidChangeCursorPosition((e) => {
@@ -485,6 +491,14 @@ function initializeEditor() {
 
     // Setup CSS variable observer for VS Code themes
     setupCSSVariableObserver();
+
+    /* Po initach, które mogą nadpisać opcje Monako — ponownie zsynchronizuj z vseditor_editor_prefs */
+    if (typeof syncEditorOptionsFromPrefs === 'function') {
+        syncEditorOptionsFromPrefs();
+    }
+    if (typeof syncBracketGuidesVariableFromPrefs === 'function') {
+        syncBracketGuidesVariableFromPrefs();
+    }
 
     console.log('🎉 Monaco Editor initialization completed successfully!');
 }
@@ -589,6 +603,14 @@ function initializeBracketGuides() {
     updateFooterStatus('Bracket guides enabled', 'code');
     setTimeout(() => updateFooterStatus('Ready', 'circle'), 2000);
 }
+
+/** Używane przez set.js po syncEditorOptionsFromPrefs — zsynchronizuj zmienną z localStorage */
+function syncBracketGuidesVariableFromPrefs() {
+    if (typeof getEditorPrefs !== 'function') return;
+    bracketGuidesEnabled = getEditorPrefs().indentGuides !== false;
+    window.bracketGuidesEnabled = bracketGuidesEnabled;
+}
+window.syncBracketGuidesVariableFromPrefs = syncBracketGuidesVariableFromPrefs;
 
 function setBracketGuidesEnabled(enabled, showStatus = false) {
     if (!editor) return;
@@ -714,6 +736,10 @@ function initializeSyntaxHighlighting() {
 function enhanceSyntaxTokens() {
     if (!editor) return;
 
+    const p = typeof getEditorPrefs === 'function' ? getEditorPrefs() : {};
+    const guidesOn = p.indentGuides !== false;
+    const bracketOn = p.bracketPairColorization !== false;
+
     // Add custom CSS classes for enhanced syntax highlighting
     const editorElement = editor.getDomNode();
     if (editorElement) {
@@ -721,61 +747,51 @@ function enhanceSyntaxTokens() {
         // Removed old colorful-brackets class - using Dragan theme specific implementation
     }
 
-    // Enable bracket pair colorization with correct Monaco Editor API
+    // Nie nadpisuj przewodników / kolorowania nawiasów — trzymaj się zapisanych prefs (vseditor_editor_prefs)
     editor.updateOptions({
-        // Bracket matching and highlighting
         matchBrackets: 'always',
-        renderLineHighlight: 'all',
-
-        // Indent guides
-        renderIndentGuides: true,
-        highlightActiveIndentGuide: true,
-
-        // These options may not be supported in older Monaco versions
-        // Using alternative approach through CSS and manual configuration
+        renderLineHighlight: 'line',
+        renderIndentGuides: guidesOn,
+        highlightActiveIndentGuide: guidesOn
     });
 
-    // Enhanced bracket pair colorization and guides
     try {
         editor.updateOptions({
             bracketPairColorization: {
-                enabled: true,
+                enabled: bracketOn,
                 independentColorPoolPerBracketType: true
             },
             guides: {
-                bracketPairs: true,
-                bracketPairsHorizontal: true,
-                highlightActiveBracketPair: true,
-                indentation: true,
-                highlightActiveIndentation: true
+                bracketPairs: guidesOn,
+                bracketPairsHorizontal: guidesOn,
+                highlightActiveBracketPair: guidesOn,
+                indentation: guidesOn,
+                highlightActiveIndentation: guidesOn
             },
-            // Enhanced bracket matching for curly braces {}
             matchBrackets: 'always',
             autoClosingBrackets: 'always',
             autoClosingOvertype: 'always'
         });
-        console.log('✅ Enhanced bracket pair colorization and guides enabled');
+        console.log('✅ Enhanced bracket pair colorization and guides (wg prefs)');
     } catch (e) {
         console.log('Some bracket features not supported, using fallback configuration');
-        // Fallback configuration
         editor.updateOptions({
             guides: {
-                bracketPairs: true,
-                indentation: true
+                bracketPairs: guidesOn,
+                indentation: guidesOn
             },
             matchBrackets: 'always',
             autoClosingBrackets: 'always'
         });
     }
 
-    // Try to enable guides if supported
     try {
         if (monaco.editor.EditorOption && monaco.editor.EditorOption.guides) {
             editor.updateOptions({
                 guides: {
-                    bracketPairs: true,
-                    indentation: true,
-                    highlightActiveIndentation: true,
+                    bracketPairs: guidesOn,
+                    indentation: guidesOn,
+                    highlightActiveIndentation: guidesOn
                 }
             });
         }
@@ -783,8 +799,11 @@ function enhanceSyntaxTokens() {
         console.log('Advanced guides not supported in this Monaco version, using CSS fallback');
     }
 
-    // Force a re-render to apply new styles
     editor.layout();
+
+    if (typeof syncEditorOptionsFromPrefs === 'function') {
+        syncEditorOptionsFromPrefs();
+    }
 
     // Old colorful bracket effects removed - using Dragan theme specific implementation
 
@@ -803,6 +822,10 @@ function enhanceSyntaxTokens() {
 function enableAdvancedMonacoFeatures() {
     if (!editor) return;
 
+    const p = typeof getEditorPrefs === 'function' ? getEditorPrefs() : {};
+    const guidesOn = p.indentGuides !== false;
+    const bracketOn = p.bracketPairColorization !== false;
+
     console.log('🔧 Attempting to enable advanced Monaco Editor features...');
 
     // Check Monaco Editor version and available features
@@ -812,51 +835,46 @@ function enableAdvancedMonacoFeatures() {
     let featuresEnabled = [];
     let featuresFailed = [];
 
-    // Try bracket pair colorization
     try {
         editor.updateOptions({
-            'bracketPairColorization.enabled': true,
-            'bracketPairColorization.independentColorPoolPerBracketType': true,
+            'bracketPairColorization.enabled': bracketOn,
+            'bracketPairColorization.independentColorPoolPerBracketType': true
         });
         featuresEnabled.push('Bracket Pair Colorization');
-        console.log('✅ Bracket pair colorization enabled');
+        console.log('✅ Bracket pair colorization (wg prefs)');
     } catch (e) {
         featuresFailed.push('Bracket Pair Colorization');
         console.log('❌ Bracket pair colorization failed:', e.message);
     }
 
-    // Try advanced guides
     try {
         editor.updateOptions({
-            'guides.bracketPairs': true,
-            'guides.bracketPairsHorizontal': true,
-            'guides.highlightActiveBracketPair': true,
-            'guides.indentation': true,
-            'guides.highlightActiveIndentation': true,
+            'guides.bracketPairs': guidesOn,
+            'guides.bracketPairsHorizontal': guidesOn,
+            'guides.highlightActiveBracketPair': guidesOn,
+            'guides.indentation': guidesOn,
+            'guides.highlightActiveIndentation': guidesOn
         });
         featuresEnabled.push('Advanced Guides');
-        console.log('✅ Advanced guides enabled');
+        console.log('✅ Advanced guides (wg prefs)');
     } catch (e) {
         featuresFailed.push('Advanced Guides');
         console.log('❌ Advanced guides failed:', e.message);
     }
 
-    // Alternative approach using editor options API
     try {
         const currentOptions = editor.getOptions();
         console.log('📋 Current editor options available:', Object.keys(currentOptions._values || {}));
 
-        // Try using the editor options API directly
         if (currentOptions.get && monaco.editor.EditorOption) {
-            // Try to set bracket pair colorization
             if (monaco.editor.EditorOption.bracketPairColorization) {
                 editor.updateOptions({
                     [monaco.editor.EditorOption.bracketPairColorization]: {
-                        enabled: true,
-                        independentColorPoolPerBracketType: true,
+                        enabled: bracketOn,
+                        independentColorPoolPerBracketType: true
                     }
                 });
-                console.log('✅ Bracket pair colorization enabled via EditorOption API');
+                console.log('✅ Bracket pair colorization via EditorOption API (wg prefs)');
             }
         }
     } catch (e) {
@@ -1026,24 +1044,28 @@ function addCustomMonacoActions() {
 function configureAdvancedMonacoFeatures() {
     if (!editor) return;
 
+    const p = typeof getEditorPrefs === 'function' ? getEditorPrefs() : {};
+    const guidesOn = p.indentGuides !== false;
+    const bracketOn = p.bracketPairColorization !== false;
+    const suggestOn = p.suggestOn !== false;
+
     try {
-        // Enable advanced bracket pair colorization
         editor.updateOptions({
-            'bracketPairColorization.enabled': true,
+            'bracketPairColorization.enabled': bracketOn,
             'bracketPairColorization.independentColorPoolPerBracketType': true,
-            'guides.bracketPairs': true,
-            'guides.bracketPairsHorizontal': true,
-            'guides.highlightActiveBracketPair': true,
-            'guides.indentation': true,
-            'guides.highlightActiveIndentation': true,
+            'guides.bracketPairs': guidesOn,
+            'guides.bracketPairsHorizontal': guidesOn,
+            'guides.highlightActiveBracketPair': guidesOn,
+            'guides.indentation': guidesOn,
+            'guides.highlightActiveIndentation': guidesOn
         });
 
         // Enhanced IntelliSense
         editor.updateOptions({
             quickSuggestions: {
-                other: true,
-                comments: true,
-                strings: true
+                other: suggestOn,
+                comments: suggestOn,
+                strings: suggestOn
             },
             suggestOnTriggerCharacters: true,
             acceptSuggestionOnCommitCharacter: true,
@@ -2062,7 +2084,11 @@ function clearLocalStorage() {
     ).then((result) => {
         if (result.isConfirmed) {
             localStorage.removeItem('monaco_editor_state');
-            localStorage.removeItem(window.EDITOR_PREFS_KEY);
+            localStorage.removeItem(
+                typeof window.EDITOR_PREFS_KEY === 'string' && window.EDITOR_PREFS_KEY
+                    ? window.EDITOR_PREFS_KEY
+                    : 'vseditor_editor_prefs'
+            );
             console.log('Local storage cleared');
             updateFooterStatus('Local storage cleared', 'broom');
 
@@ -2985,26 +3011,16 @@ function createRipple(event) {
 }
 
 function initializeRippleEffect() {
-    // Add ripple effect to toolbar buttons
-    const toolbarButtons = document.querySelectorAll('.toolbar-button');
-    toolbarButtons.forEach(button => {
-        button.classList.add('ripple-button');
-        button.addEventListener('click', createRipple);
-    });
+    function bindRipple(el) {
+        if (!el || el.dataset.vsRippleBound === '1') return;
+        el.dataset.vsRippleBound = '1';
+        el.classList.add('ripple-button');
+        el.addEventListener('click', createRipple);
+    }
 
-    // Add ripple effect to footer buttons
-    const footerButtons = document.querySelectorAll('.footer-btn');
-    footerButtons.forEach(button => {
-        button.classList.add('ripple-button');
-        button.addEventListener('click', createRipple);
-    });
-
-    // Add ripple effect to main action buttons
-    const actionButtons = document.querySelectorAll('.my-btn');
-    actionButtons.forEach(button => {
-        button.classList.add('ripple-button');
-        button.addEventListener('click', createRipple);
-    });
+    document.querySelectorAll('.toolbar-button').forEach(bindRipple);
+    document.querySelectorAll('.footer-btn').forEach(bindRipple);
+    document.querySelectorAll('.my-btn').forEach(bindRipple);
 }
 
 // --- Info Modal Functions ---
@@ -3307,35 +3323,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-// --- Footer Functions ---
-function toggleFooter() {
-    const footerContent = document.getElementById('footer-content');
-    const footerToggle = document.getElementById('footer-toggle');
-
-    if (footerContent && footerToggle) {
-        const isExpanded = footerContent.classList.contains('expanded');
-
-        if (isExpanded) {
-            // Collapse
-            footerContent.classList.remove('expanded');
-            footerToggle.classList.remove('rotated');
-            footerToggle.innerHTML = '<i class="fas fa-chevron-up"></i>';
-        } else {
-            // Expand
-            footerContent.classList.add('expanded');
-            footerToggle.classList.add('rotated');
-            footerToggle.innerHTML = '<i class="fas fa-chevron-down"></i>';
-        }
-    }
-}
-
+// --- Status (pasek w .top-bar) ---
 function updateFooterStatus(status, icon = 'circle') {
     const footerStatus = document.getElementById('footer-status');
     if (footerStatus) {
         footerStatus.innerHTML = `<i class="fas fa-${icon}"></i> ${status}`;
 
         // Add status color based on status and icon
-        footerStatus.className = 'status-indicator';
+        footerStatus.className = 'status-indicator top-bar-status';
 
         // Run related statuses (green)
         if (status.includes('Preview updated') ||
@@ -3419,7 +3414,6 @@ setInterval(updateCurrentYear, 365 * 24 * 60 * 60 * 1000); // Update every year
 
 // Fix Monaco Editor layout issues
 function fixMonacoLayoutOverride() {
-    // Enhanced checks before applying fixes
     if (!window.editor || typeof window.editor.layout !== 'function') {
         console.warn('Monaco Editor not ready yet');
         return false;
@@ -3431,46 +3425,8 @@ function fixMonacoLayoutOverride() {
     }
 
     try {
-        console.log('Fixing Monaco Editor layout...');
-
-        // Force layout recalculation
+        /* Tylko przeliczenie layoutu — NIE nadpisuj opcji edytora (psuje zapisane prefs). */
         window.editor.layout();
-
-        // Additional fix for line height consistency
-        const viewLines = document.querySelectorAll('.monaco-editor .view-line');
-        if (viewLines.length > 0) {
-            viewLines.forEach(line => {
-                line.style.lineHeight = '21px';
-                line.style.height = '21px';
-            });
-        }
-
-        // Update Monaco options to prevent line collapsing
-        if (typeof window.editor.updateOptions === 'function') {
-            window.editor.updateOptions({
-                automaticLayout: false,
-                lineHeight: 21,
-                fontSize: 14,
-                fontFamily: 'Share Tech Mono, Consolas, Monaco, monospace',
-                scrollBeyondLastLine: false,
-                scrollbar: {
-                    vertical: 'visible',
-                    horizontal: 'visible',
-                    handleMouseWheel: true,
-                    useShadows: false
-                }
-            });
-        }
-
-        // Update footer status if function exists
-        if (typeof window.updateFooterStatus === 'function') {
-            window.updateFooterStatus('Editor layout fixed', 'tools');
-            setTimeout(() => window.updateFooterStatus('Ready', 'circle'), 2000);
-        } else {
-            console.log('Footer status update function not available');
-        }
-
-        console.log('Monaco Editor layout fixed successfully');
         return true;
     } catch (error) {
         console.error('Error fixing Monaco Editor layout:', error);
@@ -3563,27 +3519,13 @@ window.addEventListener('load', () => {
     }, 3000); // Wait 3 seconds after page load
 });
 
-// Periodic maintenance check (reduced frequency)
+// Delikatne odświeżenie layoutu (bez zmiany opcji edytora — nie psuj prefs użytkownika)
 setInterval(() => {
     if (window.editor && typeof window.editor.layout === 'function') {
-        const viewLines = document.querySelectorAll('.monaco-editor .view-line');
-        if (viewLines.length > 0) {
-            let needsFix = false;
-            try {
-                // Check only first few lines for performance
-                for (let i = 0; i < Math.min(3, viewLines.length); i++) {
-                    const computedStyle = window.getComputedStyle(viewLines[i]);
-                    if (computedStyle.lineHeight !== '21px' || computedStyle.height !== '21px') {
-                        needsFix = true;
-                        break;
-                    }
-                }
-                if (needsFix) {
-                    fixMonacoLayoutOverride();
-                }
-            } catch (error) {
-                // Silently handle errors
-            }
+        try {
+            window.editor.layout();
+        } catch (error) {
+            /* ignore */
         }
     }
-}, 30000); // Check every 30 seconds
+}, 30000);

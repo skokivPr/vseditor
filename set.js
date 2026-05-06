@@ -106,7 +106,7 @@
             suggestOn: true,
             hoverEnabled: true,
             folding: true,
-            glyphMargin: true,
+            glyphMargin: false,
             occurrencesHighlight: true,
             selectionHighlight: true,
             colorDecorators: true,
@@ -115,13 +115,118 @@
         };
     }
 
+    function normalizeEditorPrefs(merged) {
+        const d = getDefaultEditorPrefs();
+        const out = { ...d };
+        Object.keys(d).forEach((key) => {
+            if (!Object.prototype.hasOwnProperty.call(merged, key)) return;
+            out[key] = merged[key];
+        });
+        out.fontSize = Math.max(10, Math.min(22, parseInt(String(out.fontSize), 10) || d.fontSize));
+        out.lineHeight = Math.max(16, Math.min(32, parseInt(String(out.lineHeight), 10) || d.lineHeight));
+        out.tabSize = Math.max(2, Math.min(8, parseInt(String(out.tabSize), 10) || d.tabSize));
+        Object.keys(d).forEach((k) => {
+            if (typeof d[k] !== 'boolean') return;
+            const v = out[k];
+            out[k] = v === true || v === 1 || v === '1' || v === 'true';
+        });
+        if (typeof out.cursorStyle !== 'string' || !out.cursorStyle) out.cursorStyle = d.cursorStyle;
+        if (typeof out.cursorBlinking !== 'string' || !out.cursorBlinking) out.cursorBlinking = d.cursorBlinking;
+        return out;
+    }
+
     function getEditorPrefs() {
         try {
             const raw = localStorage.getItem(EDITOR_PREFS_KEY);
-            if (!raw) return getDefaultEditorPrefs();
-            return { ...getDefaultEditorPrefs(), ...JSON.parse(raw) };
+            if (!raw || raw === 'null') return getDefaultEditorPrefs();
+            let parsed;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (e) {
+                return getDefaultEditorPrefs();
+            }
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                return getDefaultEditorPrefs();
+            }
+            return normalizeEditorPrefs({ ...getDefaultEditorPrefs(), ...parsed });
         } catch (e) {
             return getDefaultEditorPrefs();
+        }
+    }
+
+    /** Jedno mapowanie: zapisane prefs → monaco.editor.IEditorOptions (bez value/language/theme). */
+    function prefsToMonacoUpdateOptions(p) {
+        const guidesOn = p.indentGuides !== false;
+        return {
+            wordWrap: p.wordWrap !== false ? 'on' : 'off',
+            minimap: { enabled: p.minimap !== false },
+            lineNumbers: p.lineNumbers !== false ? 'on' : 'off',
+            fontSize: p.fontSize,
+            lineHeight: p.lineHeight,
+            tabSize: p.tabSize,
+            insertSpaces: p.insertSpaces !== false,
+            formatOnType: p.formatOnType !== false,
+            formatOnPaste: p.formatOnPaste !== false,
+            fontLigatures: p.fontLigatures !== false,
+            smoothScrolling: p.smoothScrolling !== false,
+            mouseWheelZoom: p.mouseWheelZoom !== false,
+            scrollBeyondLastLine: p.scrollBeyondLastLine === true,
+            renderWhitespace: p.renderWhitespace ? 'all' : 'none',
+            bracketPairColorization: {
+                enabled: p.bracketPairColorization !== false,
+                independentColorPoolPerBracketType: true
+            },
+            linkedEditing: p.linkedEditing !== false,
+            inlineSuggest: { enabled: p.suggestOn !== false, mode: 'prefix' },
+            hover: { enabled: p.hoverEnabled !== false, delay: 300 },
+            suggest: {
+                enabled: p.suggestOn !== false,
+                showSnippets: true,
+                showKeywords: true,
+                showColors: true,
+                showConstants: true,
+                showClasses: true,
+                showFields: true,
+                showFunctions: true,
+                showMethods: true,
+                showProperties: true,
+                showVariables: true,
+                showWords: true
+            },
+            quickSuggestions: {
+                other: p.suggestOn !== false,
+                comments: p.suggestOn !== false,
+                strings: p.suggestOn !== false
+            },
+            renderIndentGuides: guidesOn,
+            highlightActiveIndentGuide: guidesOn,
+            guides: {
+                bracketPairs: guidesOn,
+                bracketPairsHorizontal: guidesOn,
+                highlightActiveBracketPair: guidesOn,
+                indentation: guidesOn,
+                highlightActiveIndentation: guidesOn
+            },
+            folding: p.folding !== false,
+            glyphMargin: p.glyphMargin === true,
+            occurrencesHighlight: p.occurrencesHighlight !== false,
+            selectionHighlight: p.selectionHighlight !== false,
+            colorDecorators: p.colorDecorators !== false,
+            cursorStyle: p.cursorStyle || 'line',
+            cursorBlinking: p.cursorBlinking || 'blink'
+        };
+    }
+
+    function syncEditorOptionsFromPrefs() {
+        const ed = getEditorInstance();
+        if (!ed || typeof ed.updateOptions !== 'function') return;
+        try {
+            ed.updateOptions(prefsToMonacoUpdateOptions(getEditorPrefs()));
+            if (typeof global.syncBracketGuidesVariableFromPrefs === 'function') {
+                global.syncBracketGuidesVariableFromPrefs();
+            }
+        } catch (e) {
+            console.warn('[vseditor] syncEditorOptionsFromPrefs', e);
         }
     }
 
@@ -229,7 +334,7 @@
             setChk('setting-inline-suggest', p.suggestOn !== false);
             setChk('setting-hover', p.hoverEnabled !== false);
             setChk('setting-folding', p.folding !== false);
-            setChk('setting-glyph-margin', p.glyphMargin !== false);
+            setChk('setting-glyph-margin', p.glyphMargin === true);
             setChk('setting-occurrences-highlight', p.occurrencesHighlight !== false);
             setChk('setting-selection-highlight', p.selectionHighlight !== false);
             setChk('setting-color-decorators', p.colorDecorators !== false);
@@ -298,60 +403,6 @@
         const cursorStyle = (cs && cs.value) || 'line';
         const cursorBlinking = (cb && cb.value) || 'blink';
 
-        ed.updateOptions({
-            wordWrap: wordWrap ? 'on' : 'off',
-            minimap: { enabled: minimap },
-            lineNumbers: lineNumbers ? 'on' : 'off',
-            fontSize,
-            lineHeight,
-            tabSize,
-            insertSpaces,
-            formatOnType,
-            formatOnPaste,
-            fontLigatures,
-            smoothScrolling,
-            mouseWheelZoom,
-            scrollBeyondLastLine,
-            renderWhitespace: renderWhitespace ? 'all' : 'none',
-            bracketPairColorization: {
-                enabled: bracketPairColorization,
-                independentColorPoolPerBracketType: true
-            },
-            linkedEditing,
-            inlineSuggest: { enabled: suggestOn, mode: 'prefix' },
-            hover: { enabled: hoverEnabled, delay: 300 },
-            suggest: {
-                enabled: suggestOn,
-                showSnippets: true,
-                showKeywords: true,
-                showColors: true,
-                showConstants: true,
-                showClasses: true,
-                showFields: true,
-                showFunctions: true,
-                showMethods: true,
-                showProperties: true,
-                showVariables: true,
-                showWords: true
-            },
-            quickSuggestions: {
-                other: suggestOn,
-                comments: suggestOn,
-                strings: suggestOn
-            },
-            folding,
-            glyphMargin,
-            occurrencesHighlight,
-            selectionHighlight,
-            colorDecorators,
-            cursorStyle,
-            cursorBlinking
-        });
-
-        if (typeof global.setBracketGuidesEnabled === 'function') {
-            global.setBracketGuidesEnabled(indentGuides, false);
-        }
-
         saveEditorPrefs({
             wordWrap,
             minimap,
@@ -380,6 +431,8 @@
             cursorStyle,
             cursorBlinking
         });
+
+        syncEditorOptionsFromPrefs();
 
         if (typeof global.updateFooterStatus === 'function') {
             global.updateFooterStatus('Ustawienia zapisane', 'save');
@@ -457,6 +510,17 @@
         if (cs) cs.addEventListener('change', () => applyEditorPrefsFromPanel());
         const cb = document.getElementById('setting-cursor-blink');
         if (cb) cb.addEventListener('change', () => applyEditorPrefsFromPanel());
+
+        const yearEl = document.getElementById('current-year');
+        if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+        if (typeof global.initializeRippleEffect === 'function') {
+            global.initializeRippleEffect();
+        }
+
+        if (getEditorInstance()) {
+            syncEditorOptionsFromPrefs();
+        }
     }
 
     function initSettingsPanel() {
@@ -473,6 +537,8 @@
     global.closeSettingsPanel = closeSettingsPanel;
     global.syncSettingsPanelFromPrefs = syncSettingsPanelFromPrefs;
     global.applyEditorPrefsFromPanel = applyEditorPrefsFromPanel;
+    global.prefsToMonacoUpdateOptions = prefsToMonacoUpdateOptions;
+    global.syncEditorOptionsFromPrefs = syncEditorOptionsFromPrefs;
     global.initSettingsPanel = initSettingsPanel;
     global.mountSettingsPanel = mountSettingsPanel;
 })(typeof window !== 'undefined' ? window : globalThis);
