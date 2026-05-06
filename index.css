@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Global Variables & Theme Setup 
+   Global Variables & Theme Setup
    ========================================================================== */
 :root {
     --primary-color: #fd810d;
@@ -80,6 +80,12 @@
     --rgb-orange: 211, 84, 0;
     --rgb-gray: 128, 128, 128;
     --rgb-white: 0, 0, 0;
+
+    /* Podgląd po Stop: iframe ma osobny dokument (srcdoc) — nie ładuje index.css.
+       Kolory wstrzykuje getPreviewStoppedSrcdoc() w index.js przez getComputedStyle(...). */
+    --preview-stopped-bg: var(--background-color);
+    --preview-stopped-fg: var(--quaternary-color);
+    --preview-stopped-accent: var(--primary-color);
 
     /* Colors for syntax highlighting */
     --Keywords: #FF00FF;
@@ -296,6 +302,7 @@ p {
     background-color: var(--background-color);
 }
 
+/* Ramka iframe; wewnątrz po Stop — dokument z getPreviewStoppedSrcdoc() w index.js */
 #preview {
     width: 100%;
     height: 100%;
@@ -417,7 +424,11 @@ p {
    Footer (treść przeniesiona do zakładki System w panelu ustawień)
    ========================================================================== */
 #settings-tab-system .system-tab-footer {
-    margin-top: 0.75rem;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    min-height: 0;
     padding-top: 0.75rem;
     border-top: 1px solid var(--border-color);
     background: var(--bg-color, var(--background-color));
@@ -426,19 +437,33 @@ p {
 #settings-tab-system .system-tab-footer>.footer-content {
     max-width: none;
     margin: 0;
-    padding: 12px 0.25rem 10px;
+    padding: 0.75rem 0.35rem 1rem;
     max-height: none;
     opacity: 1;
     overflow: visible;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem 1.125rem;
+    align-items: start;
 }
 
 #settings-tab-system .system-tab-footer>.footer-bottom {
     max-width: none;
     margin: 0;
-    padding: 0.5rem 0 0;
+    margin-top: auto;
+    padding: 0.6rem 0.25rem 0.25rem;
     justify-content: center;
     text-align: center;
+    flex-shrink: 0;
+}
+
+#settings-tab-system .footer-copyright p {
+    margin: 0;
+    padding-top: 0.25rem;
+    font-size: 0.78rem;
+    opacity: 0.92;
+    line-height: 1.45;
 }
 
 .footer-content {
@@ -1977,6 +2002,9 @@ body.settings-sidebar-open {
 
 .settings-sidebar-body {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     overflow-y: auto;
     padding: 0;
     position: relative;
@@ -2019,6 +2047,7 @@ body.settings-sidebar-open {
     display: flex;
     flex-wrap: wrap;
     gap: 0;
+    flex-shrink: 0;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -2079,14 +2108,54 @@ body.settings-sidebar-open {
 
 .settings-sidebar .settings-tab-content {
     display: none;
-    padding: 0.2rem 0.5rem;
-    margin-top: 0;
-    border-top: 1px solid var(--border-color);
-    box-shadow: var(--shadow-inset);
+    margin: 0;
+    padding: 0.9rem 1rem 1.4rem;
+    position: relative;
+    font-family: var(--font-family);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    color: var(--text-color);
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--highlight-color, var(--primary-color)) 14%, transparent);
+    background: linear-gradient(168deg,
+            color-mix(in srgb, var(--bg-tertiary) 45%, transparent) 0%,
+            transparent 38%);
 }
 
 .settings-sidebar .settings-tab-content.active {
     display: block;
+    animation: settings-sidebar-tab-in 0.24s ease-out;
+}
+
+#settings-tab-editor.settings-tab-content.active {
+    flex: 0 1 auto;
+}
+
+#settings-tab-system.settings-tab-content.active {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 0.65rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .settings-sidebar .settings-tab-content.active {
+        animation: none;
+    }
+}
+
+@keyframes settings-sidebar-tab-in {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .settings-sidebar .setting-item {
