@@ -121,6 +121,13 @@ html {
     scrollbar-width: none;
     scrollbar-color: #383838 #2e2e2e;
     user-select: none;
+    border-radius: 0px !important;
+    outline: none !important;
+}
+
+*::before,
+*::after {
+    border-radius: 0px !important;
 }
 
 *::-webkit-scrollbar {
@@ -552,6 +559,7 @@ p {
     gap: 6px;
     width: 80px;
     height: 30px;
+    justify-content: center;
 }
 
 .my-btn i {
